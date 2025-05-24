@@ -17,7 +17,7 @@ pipeline {
             steps {
                 script {
                     def imageTag = "${env.BUILD_NUMBER}"
-                    docker.build("${IMAGE_NAME}:${imageTag}")
+                    appImage = docker.build("${IMAGE_NAME}:${imageTag}")
                 }
             }
         }
@@ -25,10 +25,9 @@ pipeline {
         stage('Push image to Docker Hub') {
             steps {
                 script {
-                    def imageTag = "${env.BUILD_NUMBER}"
-                    docker.withRegistry('https://registry.hub.docker.com', 'DOCKERHUB_CREDENTIALS') {
-                        docker.image("${IMAGE_NAME}:${imageTag}").push()
-                        docker.image("${IMAGE_NAME}:${imageTag}").push('latest')
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
+                        appImage.push()
+                        appImage.push('latest')
                     }
                 }
             }
@@ -37,9 +36,8 @@ pipeline {
         stage('Deploy with Docker Compose') {
             steps {
                 script {
-                    // הורדת docker-compose.yaml עדכני
                     sh 'curl -O https://raw.githubusercontent.com/oren1984/flask-jenkins-pipeline/main/docker-compose.yaml'
-                    // הרצת השירות עם docker-compose
+                    sh 'docker-compose down || true'
                     sh 'docker-compose up -d'
                 }
             }
